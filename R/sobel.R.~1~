@@ -1,0 +1,6 @@
+# sobel bootstrap function
+
+sobelboot <- function(y,x,m,boot=1000){
+
+  outdat <- matrix(0,boot,1)
+  

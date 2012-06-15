@@ -1,0 +1,2 @@
+7/29/2011:  added error handling to gtheory.R to ensure all models specify fully-crossed designs.
+

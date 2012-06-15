@@ -1,0 +1,11 @@
+Package: MRES
+Version: 0.9-4
+Date: 2011-10-31
+Title: Miscellaneous Measurement and Data Analysis Routines
+Author: Patrick E. McKnight <pmcknigh@gmu.edu>
+Maintainer: Patrick E. McKnight <pmcknigh@gmu.edu>
+Depends: R (>= 2.7.0), mvnlme, sfsmisc, lme4, UsingR, psy
+Suggests: lattice, gtools, sem, ltm, eRm
+Description: The package contains several simple psychometric and longitudinal data analysis functions useful for data reduction. The psychometric packages include classical test theory procedures, generalizability theory (g and d studies), unit-weighted factor construction, Rasch model item plotting for multiple waves of data, and intraclass correlations.  Other miscellaneous data reduction and enhancements are included to supplement existing packages.
+License: GPL-2
+URL: http://mres.gmu.edu/R/

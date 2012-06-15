@@ -1,0 +1,146 @@
+## usage: x is the data.frame, items are the columns for the items,
+## crit is the columns for the criterion variable.
+
+carvedscales <- function(x,...){
+  UseMethod("carvedscales")
+}
+
+carvedscales.default <- function(x,itms,crt,boot=F,Nobs=100,iter=100){
+  library(gregmisc)
+
+  X <- rowSums(x[,itms],na.rm=T)
+  Y <- x[,crt]
+  orig.cor <- cor(X,Y)
+
+  ## need to check the number of items
+  Nitms <- length(itms)
+  
+  carvefcn <- function(items,crit,item.fin){
+    crit.cor <- rep(NA,nrow(item.fin))
+    ts.cor <- rep(NA,nrow(item.fin))
+    for (i in 1:nrow(item.fin)){
+      tmp <- items[,item.fin[i,]]
+      if (is.null(ncol(tmp))){
+        crit.cor[i] <- round(cor(tmp,crit),2)
+        ts.cor[i] <- round(cor(tmp,total),2)
+      } else {
+        crit.cor[i] <- round(cor(rowSums(tmp),crit),2)
+        ts.cor[i] <- round(cor(rowSums(tmp),total),2)
+      }
+    }
+    out <- list(crit.cor=crit.cor,ts.cor=ts.cor)
+    return(out)
+  }
+
+
+  if (Nitms <= 10){
+    if (boot==F){
+      items <- x[,itms]
+      crit <- x[,crt]
+      total <- rowSums(items)
+      item.sel <- permutations(2,ncol(items),c(T,F),repeats=T)
+      item.fin <- item.sel[-1,] # only the permutations that matter
+      out <- carvefcn(items,crit,item.fin) # call core fcn
+      crit.cor <- out[[1]]
+      ts.cor <- out[[2]]
+      crit.best <- match(max(abs(crit.cor)),abs(crit.cor))
+      total.best <- match(max(abs(ts.cor[-length(ts.cor)])),abs(ts.cor[-length(ts.cor)]))
+      crit.best.items <- names(items)[item.fin[crit.best,]]
+      total.best.items <- names(items)[item.fin[total.best,]]
+      res <- list(crit.cor=crit.cor,total.cor=ts.cor,items=item.fin,item.names=names(items),crit=names(x)[crt],crit.best=crit.best,total.best=total.best,crit.best.items=crit.best.items,total.best.items=total.best.items,boot=F,orig.cor=orig.cor)
+
+      } else {
+        out.dat <- data.frame(crit.best=rep(NA,iter),pattern=rep(NA,iter))
+
+        for (i in 1:iter){
+          tmp <- x[sample(1:nrow(x),Nobs,T),]
+          items <- tmp[,itms]
+          crit <- tmp[,crt]
+          total <- rowSums(items)
+          item.sel <- permutations(2,ncol(items),c(T,F),repeats=T)
+          item.fin <- item.sel[-1,]
+          out <- carvefcn(items,crit,item.fin) # call core fcn
+          crit.cor <- out[[1]]
+          cc.dat <- data.frame(cc=crit.cor,cc.abs=abs(crit.cor))
+          max.cor <- cc.dat[order(cc.dat$cc.abs,decreasing=T),1][1]
+          out.dat[i,] <- c(max.cor,match(max(abs(crit.cor)),abs(crit.cor)))
+        }
+        res <- list(out.dat=out.dat,items=item.fin,item.names=names(x)[itms],crit=names(x)[crt],boot=T,orig.cor=orig.cor)
+      }
+  }
+
+  if (Nitms > 10){
+
+    # get the number of groups of 5 to 8 item clusters
+    Cn <- 10
+    repeat{
+      Cn <- Cn - 1
+      print(i)
+      if(Nitms %% Cn == 0 | Cn == 4) break
+    }
+    
+    for (Cn in 8:5){
+      Nitms %% DIV
+      mod6 <-NA
+      }
+  }
+
+  
+  class(res) <- "carvedscales"
+  invisible(res)
+  return(res)
+}
+
+    
+summary.carvedscales <- function(x){
+  if(x$boot==T){
+    Xbar <- aggregate(x$out.dat$crit.best,by=list(x$out.dat$pattern),mean)
+    N <- aggregate(x$out.dat$crit.best,by=list(x$out.dat$pattern),length)
+    Imin <- aggregate(x$out.dat$crit.best,by=list(x$out.dat$pattern),min)
+    Imax <- aggregate(x$out.dat$crit.best,by=list(x$out.dat$pattern),max)
+    item.patts <- x$items[unique(x$out.dat$pattern),]
+    item.out <- data.frame(Group.1=unique(x$out.dat$pattern),items=rep(NA,nrow(item.patts)))
+    for (i in 1:nrow(item.patts)){
+      item.out[i,2] <- paste(x$item.names[x$items[item.out[i,1],]],sep=" ",collapse=" ")
+    }
+    out <- merge(N,Xbar,by="Group.1")
+    out <- merge(out,Imin,by="Group.1")
+    out <- merge(out,Imax,by="Group.1")
+    out <- merge(out,item.out,by="Group.1")
+    names(out) <- c("Patt.Number","N","Mean","Min","Max","items")
+    out[,3] <- round(out[,3],2)
+    out[,4] <- round(out[,4],2)
+    out[,5] <- round(out[,5],2)
+    return(out)
+    print(out)
+  }
+  if(x$boot==F){
+    maxcor.crit <- max(x$crit.cor)
+    maxcor.ts <- max(x$total.cor[-length(x$total.cor)])
+    regcor <- x$total.cor[length(x$total.cor)]
+  }
+}
+
+plot.carvedscales <- function(x){
+  if (x$boot==T){
+    dat <- x$out.dat[order(x$out.dat$pattern),]
+    plot(crit.best~as.factor(pattern),data=dat,xlab="Pattern",ylab="Correlation",ylim=c(-1.2,1))
+    abline(h=x$orig.cor,col="blue",lwd=2)
+    legend("topright",legend=c("Full Scale Correlation"),lty=1,lwd=2,col=c("blue"))
+  }
+  
+  if (x$boot==F){
+    par(mfrow=c(1,2))
+    hist(x$crit.cor,xlab="Correlation",main="Criterion")
+    allcor <- x$crit.cor[length(x$crit.cor)]
+    abline(v=allcor,col="red",lwd=2)
+    abline(v=x$crit.cor[x$crit.best],col="blue",lwd=2)
+    legend("topright",legend=c("Best","Total"),lty=1,lwd=2,col=c("blue","red"))
+
+    hist(x$total.cor,xlab="Correlation",main="Total Score")
+    abline(v=x$total.cor[x$total.best],col="blue",lwd=2)
+
+    par(mfrow=c(1,1))
+  }
+}
+

@@ -50,7 +50,7 @@ mddiag <- function(x, ...){
 
 mddiag.default <- function(x){
   # Required libraries
-  library(mvnmle)
+  ##library(mvnmle) ## NOT AVAILABLE as of 9/16/13
 ##  library(norm)  - cannot compile norm on Gutsy
 
   # Input checking
